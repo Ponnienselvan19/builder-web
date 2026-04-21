@@ -687,6 +687,33 @@
       padding-top: 8px;
     }
 
+    .order-success {
+      display: none;
+      margin-bottom: 18px;
+      background: #f3f7eb;
+      border: 1px solid #d7e4c9;
+      border-radius: 22px;
+      padding: 16px 18px;
+    }
+
+    .order-success.show {
+      display: block;
+    }
+
+    .order-success .label {
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.68rem;
+      color: #88a07a;
+      margin-bottom: 6px;
+    }
+
+    .order-success .text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #485843;
+    }
+
     footer {
       border-top: 1px solid #e4ead8;
       margin-top: 28px;
@@ -978,6 +1005,11 @@
               </div>
             </div>
 
+            <div id="orderSuccess" class="order-success">
+              <div class="label">Success</div>
+              <div class="text">Order Placed</div>
+            </div>
+
             <div class="form-grid">
               <input id="checkout-name" placeholder="Full name">
               <input id="checkout-phone" placeholder="Phone number">
@@ -987,7 +1019,7 @@
 
             <div class="checkout-actions">
               <button type="button" class="btn-secondary" onclick="showPage('menu')">Add More Items</button>
-              <button type="button" class="place-btn">Place Order</button>
+              <button type="button" class="place-btn" onclick="placeOrder()">Place Order</button>
             </div>
           </div>
 
@@ -1199,6 +1231,7 @@
       }
 
       selectedQuantities[id] = 1;
+      hideOrderSuccess();
       renderAllMenus();
       renderBasket();
       showPage("checkout");
@@ -1208,6 +1241,7 @@
       cart = cart
         .map(item => item.id === id ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
         .filter(item => item.qty > 0);
+      hideOrderSuccess();
       renderBasket();
     }
 
@@ -1304,6 +1338,15 @@
           </div>
         </div>
       `;
+    }
+
+    function placeOrder() {
+      if (!cart.length) return;
+      document.getElementById("orderSuccess").classList.add("show");
+    }
+
+    function hideOrderSuccess() {
+      document.getElementById("orderSuccess").classList.remove("show");
     }
 
     renderAllMenus();
