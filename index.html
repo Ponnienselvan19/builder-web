@@ -350,7 +350,7 @@
       box-shadow: 0 16px 40px rgba(146,162,131,0.12);
       display: flex;
       flex-direction: column;
-      min-height: 320px;
+      min-height: 360px;
     }
 
     .menu-image {
@@ -402,6 +402,29 @@
       font-size: 0.82rem;
       line-height: 1.4;
       min-height: 34px;
+    }
+
+    .size-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .size-chip {
+      border: 1px solid #dce7cf;
+      background: #fcfdf9;
+      color: #6f7d67;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      cursor: pointer;
+    }
+
+    .size-chip.active {
+      background: #c9a45f;
+      color: white;
+      border-color: #c9a45f;
     }
 
     .menu-bottom {
@@ -714,6 +737,31 @@
       color: #485843;
     }
 
+    .cart-popup {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: #485843;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+      z-index: 9999;
+      font-size: 1rem;
+      min-width: 260px;
+      text-align: center;
+      opacity: 0;
+      transition: 0.25s ease;
+      display: none;
+    }
+
+    .cart-popup.show {
+      display: block;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     footer {
       border-top: 1px solid #e4ead8;
       margin-top: 28px;
@@ -817,6 +865,11 @@
 
       .hero-main-image img {
         height: 380px;
+      }
+
+      .cart-popup {
+        min-width: 220px;
+        width: calc(100% - 40px);
       }
     }
   </style>
@@ -1059,6 +1112,8 @@
     </footer>
   </div>
 
+  <div id="cartPopup" class="cart-popup">Item added to cart</div>
+
   <script>
     const menu = {
       pizzas: [
@@ -1066,49 +1121,49 @@
           id: 1,
           name: "Margherita Pizza",
           desc: "Classic tomato sauce, mozzarella, and fresh basil on a crisp hand-finished base.",
-          price: 11.9,
           badge: "Classic",
           image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1200&q=80",
+          sizes: { small: 9.9, medium: 11.9, large: 13.9 }
         },
         {
           id: 2,
           name: "Pepperoni Pizza",
           desc: "Loaded with pepperoni slices, mozzarella, and rich tomato sauce.",
-          price: 13.5,
           badge: "Best Seller",
           image: "https://images.unsplash.com/photo-1601924582970-9238bcb495d9?auto=format&fit=crop&w=1200&q=80",
+          sizes: { small: 11.5, medium: 13.5, large: 15.5 }
         },
         {
           id: 3,
           name: "BBQ Chicken Pizza",
           desc: "Grilled chicken, smoky BBQ sauce, red onion, and melted mozzarella.",
-          price: 14.9,
           badge: "Smoky",
           image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80",
+          sizes: { small: 12.9, medium: 14.9, large: 16.9 }
         },
         {
           id: 4,
           name: "Cheese Brust Pizza",
           desc: "Extra cheesy pizza with a rich stuffed crust and classic tomato base.",
-          price: 15.5,
           badge: "Cheesy",
           image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+          sizes: { small: 13.5, medium: 15.5, large: 17.5 }
         },
         {
           id: 5,
           name: "Farmhouse Pizza",
           desc: "Mushrooms, onions, sweetcorn, peppers, and mozzarella on a tomato base.",
-          price: 13.9,
           badge: "Loaded Veg",
           image: "https://images.unsplash.com/photo-1511689660979-10d2b1aada49?auto=format&fit=crop&w=1200&q=80",
+          sizes: { small: 11.9, medium: 13.9, large: 15.9 }
         },
         {
           id: 6,
           name: "Veg Pizza",
           desc: "A colourful mix of peppers, onions, mushrooms, olives, and mozzarella.",
-          price: 12.9,
           badge: "Fresh",
           image: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=1200&q=80",
+          sizes: { small: 10.9, medium: 12.9, large: 14.9 }
         },
       ],
       sides: [
@@ -1189,8 +1244,10 @@
 
     const allItems = [...menu.pizzas, ...menu.sides, ...menu.drinks];
     const selectedQuantities = {};
+    const selectedSizes = {};
     let cart = [];
     let orderType = "delivery";
+    let cartPopupTimeout;
 
     const fallbackImage = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500'><rect width='800' height='500' fill='%23fbfcf7'/><rect x='40' y='40' width='720' height='420' rx='28' fill='%23ffffff' stroke='%23e4ead8' stroke-width='6'/><text x='400' y='230' text-anchor='middle' font-family='Arial, sans-serif' font-size='34' fill='%23485843'>Image unavailable</text><text x='400' y='275' text-anchor='middle' font-family='Arial, sans-serif' font-size='22' fill='%23798572'>Please refresh or change the image</text></svg>";
 
@@ -1219,34 +1276,52 @@
       renderAllMenus();
     }
 
+    function setPizzaSize(id, size) {
+      selectedSizes[id] = size;
+      renderAllMenus();
+    }
+
     function addToCart(id) {
       const item = allItems.find(i => i.id === id);
       const qty = selectedQuantities[id] || 1;
-      const existing = cart.find(i => i.id === id);
+      const size = item.sizes ? (selectedSizes[id] || "medium") : null;
+      const price = item.sizes ? item.sizes[size] : item.price;
+      const cartKey = item.sizes ? `${id}-${size}` : `${id}`;
+
+      const existing = cart.find(i => i.cartKey === cartKey);
 
       if (existing) {
         existing.qty += qty;
       } else {
-        cart.push({ ...item, qty });
+        cart.push({
+          ...item,
+          cartKey,
+          qty,
+          selectedSize: size,
+          price
+        });
       }
 
       selectedQuantities[id] = 1;
       hideOrderSuccess();
       renderAllMenus();
       renderBasket();
-      showPage("checkout");
+      showCartPopup(`${item.name} added to cart`);
     }
 
-    function updateCartQty(id, delta) {
+    function updateCartQty(cartKey, delta) {
       cart = cart
-        .map(item => item.id === id ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
+        .map(item => item.cartKey === cartKey ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
         .filter(item => item.qty > 0);
+
       hideOrderSuccess();
       renderBasket();
     }
 
     function renderCard(item) {
       const qty = selectedQuantities[item.id] || 1;
+      const selectedSize = selectedSizes[item.id] || "medium";
+      const price = item.sizes ? item.sizes[selectedSize] : item.price;
 
       return `
         <div class="menu-card">
@@ -1258,9 +1333,16 @@
               ${item.badge ? `<span class="badge">${item.badge}</span>` : ""}
               <h4>${item.name}</h4>
               <p>${item.desc}</p>
+              ${item.sizes ? `
+                <div class="size-row">
+                  <button type="button" class="size-chip ${selectedSize === 'small' ? 'active' : ''}" onclick="setPizzaSize(${item.id}, 'small')">Small</button>
+                  <button type="button" class="size-chip ${selectedSize === 'medium' ? 'active' : ''}" onclick="setPizzaSize(${item.id}, 'medium')">Medium</button>
+                  <button type="button" class="size-chip ${selectedSize === 'large' ? 'active' : ''}" onclick="setPizzaSize(${item.id}, 'large')">Large</button>
+                </div>
+              ` : ""}
             </div>
             <div class="menu-bottom">
-              <div class="price">£${item.price.toFixed(2)}</div>
+              <div class="price">£${price.toFixed(2)}</div>
               <div class="qty-wrap">
                 <div class="qty-control">
                   <button type="button" onclick="updateSelectedQty(${item.id}, -1)">−</button>
@@ -1291,7 +1373,7 @@
             ${allItems.slice(0,3).map(item => `
               <button type="button" onclick="addToCart(${item.id})">
                 <div style="font-weight:600;">${item.name}</div>
-                <div style="font-size:0.9rem; color:#798572; margin-top:4px;">£${item.price.toFixed(2)}</div>
+                <div style="font-size:0.9rem; color:#798572; margin-top:4px;">From £${(item.sizes ? item.sizes.medium : item.price).toFixed(2)}</div>
               </button>
             `).join("")}
           </div>
@@ -1308,15 +1390,15 @@
           ${cart.map(item => `
             <div class="summary-item">
               <div>
-                <h4>${item.name}</h4>
+                <h4>${item.name}${item.selectedSize ? ` (${item.selectedSize.charAt(0).toUpperCase() + item.selectedSize.slice(1)})` : ""}</h4>
                 <small>£${item.price.toFixed(2)} each</small>
               </div>
               <div class="summary-item-right">
                 <div style="font-weight:700; color:#485843;">£${(item.price * item.qty).toFixed(2)}</div>
                 <div class="summary-qty">
-                  <button type="button" onclick="updateCartQty(${item.id}, -1)">−</button>
+                  <button type="button" onclick="updateCartQty('${item.cartKey}', -1)">−</button>
                   <span>${item.qty}</span>
-                  <button type="button" onclick="updateCartQty(${item.id}, 1)">+</button>
+                  <button type="button" onclick="updateCartQty('${item.cartKey}', 1)">+</button>
                 </div>
               </div>
             </div>
@@ -1341,12 +1423,42 @@
     }
 
     function placeOrder() {
-      if (!cart.length) return;
-      document.getElementById("orderSuccess").classList.add("show");
+      if (!cart.length) {
+        showCartPopup("Your cart is empty");
+        return;
+      }
+
+      const successBox = document.getElementById("orderSuccess");
+      if (successBox) {
+        successBox.classList.add("show");
+      }
     }
 
     function hideOrderSuccess() {
-      document.getElementById("orderSuccess").classList.remove("show");
+      const successBox = document.getElementById("orderSuccess");
+      if (successBox) {
+        successBox.classList.remove("show");
+      }
+    }
+
+    function showCartPopup(message = "Item added to cart") {
+      const popup = document.getElementById("cartPopup");
+      if (!popup) return;
+
+      popup.textContent = message;
+      popup.style.display = "block";
+
+      requestAnimationFrame(() => {
+        popup.classList.add("show");
+      });
+
+      clearTimeout(cartPopupTimeout);
+      cartPopupTimeout = setTimeout(() => {
+        popup.classList.remove("show");
+        setTimeout(() => {
+          popup.style.display = "none";
+        }, 250);
+      }, 1800);
     }
 
     renderAllMenus();
